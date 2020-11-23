@@ -1,22 +1,17 @@
-//
-//  Ref.: https://codepen.io/onom/pen/JOwxZr
-//
+//  forked: https://codepen.io/onom/pen/JOwxZr
 
 let frame = 0;
+let starVertices = [];
+const width = window.innerWidth;
+const height = window.innerHeight;
 
 // star vertex coordinates
-let starVertices = [
-    new THREE.Vector3(Math.sin(18/180*Math.PI), Math.cos(18/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(54/180*Math.PI), Math.cos(54/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(90/180*Math.PI), Math.cos(90/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(126/180*Math.PI), Math.cos(126/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(162/180*Math.PI), Math.cos(162/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(198/180*Math.PI), Math.cos(198/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(234/180*Math.PI), Math.cos(234/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(270/180*Math.PI), Math.cos(270/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(306/180*Math.PI), Math.cos(306/180*Math.PI), 0),
-    new THREE.Vector3(Math.sin(342/180*Math.PI), Math.cos(342/180*Math.PI), 0)
-]
+for (let degree = 18; degree < 360; degree += 36){
+    starVertices.push(
+        new THREE.Vector3(Math.sin(degree /180 * Math.PI),
+                          Math.cos(degree /180 * Math.PI),
+                          0));
+}
 
 let starFaces = [
     new THREE.Face3( 0,  9,  1),
@@ -44,31 +39,25 @@ for (let i in starVertices){
 
 let webgldev = document.getElementById('webgl-dev');
 let renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(width, height);
 webgldev.appendChild(renderer.domElement);
 
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(
     45,
-    window.innerWidth/window.innerHeight,
-    0.1,
+    width / height,
+    0.4,
     10000 );
 
-camera.position.z = 200;
-camera.position.y = 95;
-camera.rotation.x = -0.2;
+camera.position.z = 190;
+camera.position.y = 50;
+camera.rotation.x = -0.0;
 
 let ambientLight = new THREE.AmbientLight( 0xffffff, 1);
 scene.add( ambientLight );
 
-function createCircleCanvas(hue) {
+function createCircleCanvas() {
     let canvas = document.createElement('canvas');
-//     canvas.width = 256;
-//     canvas.height = 256;
-//     let context = canvas.getContext('2d');
-//     context.fillStyle = "rgb(200, 0, 0)";
-//    context.fillRect(0, 0, canvas.width, canvas.height);
-
     let SIZE   = 256;
     let HALF   = SIZE / 2;
     let CENTER = SIZE / 2;
@@ -77,15 +66,12 @@ function createCircleCanvas(hue) {
     let context = canvas.getContext('2d');
 
     let color = new THREE.Color();
-    let h = hue;
-    let s =  60;
-    let l =  40;
-    color.setHSL(h / 360, s / 100, l / 100);
-    let grad    = context.createRadialGradient(CENTER, CENTER, 0, CENTER, CENTER, HALF);
+    color.setHex(0x888888);
+
+    let grad = context.createRadialGradient(CENTER, CENTER, 0, CENTER, CENTER, HALF);
     grad.addColorStop(0, color.getStyle());
     grad.addColorStop(0.99, color.getStyle());
     grad.addColorStop(1, '#000000');
-    context.lineWidth = 0;
     context.beginPath();
     context.arc(CENTER, CENTER, HALF, 0, Math.PI * 2);
     context.fillStyle = grad;
@@ -97,8 +83,9 @@ function createCircleCanvas(hue) {
     return texture;
 }
 
+// define the color of the stars
 let starMaterial = new THREE.MeshPhongMaterial( {
-  color: 0xFFFF00
+  color: 0xffffaa
 } );
 
 // create apex star geometry
@@ -108,19 +95,18 @@ geom.faces = starFaces;
 geom.computeFaceNormals()
 let starObject = new THREE.Mesh(geom, starMaterial);
 
-starObject.position.set( 0, 100, 0 );
-starObject.rotation.set( 0, 0, 0 );
+starObject.position.set( 0, 104, 0 );
+starObject.rotation.set( 0, 0, -60 );
 scene.add( starObject );
 
-// geometory生成
 let geometry = new THREE.Geometry();
 for (let i = 0; i < 1000; i++) {
     geometry.vertices.push();
 }
 
 let material = new THREE.PointsMaterial({
-    map: createCircleCanvas(220),
-    size: 5,
+    map: createCircleCanvas(),
+    size: 4,
     transparent: true,
     blending : THREE.AdditiveBlending
 });
@@ -129,29 +115,51 @@ let mesh = new THREE.Points(geometry, material);
 scene.add(mesh);
 
 function animation() {
+    let timing = frame % 241;
 
-// ★ frame が100単位にカラーを変更したい。
-    // let h = 300;
-    // let s =  100;
-    // let l =  100;
-    // mesh.material.color.setHSL(h / 360, s / 100, l / 100);
+    if (timing < 50){
+        mesh.material.color.setHex(0x0000ff);
+    }else if (timing < 100){
+        mesh.material.color.setHex(0xffff00);
+    }else if (timing < 150){
+        mesh.material.color.setHex(0xff0000);
+    }else if (timing < 200){
+        mesh.material.color.setHex(0x00ff00);
+    }else if (timing < 205){
+        mesh.material.color.setHex(0x000000);
+    }else if (timing < 208){
+        mesh.material.color.setHex(0xffffff);
+    }else if (timing < 211){
+        mesh.material.color.setHex(0x000000);
+    }else if (timing < 214){
+        mesh.material.color.setHex(0xffffff);
+    }else if (timing < 217){
+        mesh.material.color.setHex(0x000000);
+    }else if (timing < 220){
+        mesh.material.color.setHex(0xffffff);
+    }else if (timing < 223){
+        mesh.material.color.setHex(0x000000);
+    }else if (timing < 226){
+        mesh.material.color.setHex(0xffffff);
+    }else if (timing < 229){
+        mesh.material.color.setHex(0x000000);
+    }else if (timing < 232){
+        mesh.material.color.setHex(0xffffff);
+    }else if (timing < 235){
+        mesh.material.color.setHex(0x000000);
+    }else if (timing < 238){
+        mesh.material.color.setHex(0xffffff);
+    }else if (timing < 241){
+        mesh.material.color.setHex(0x000000);
+    }
 
-    // mesh.material.color.setHex(0xffff00);
-    // mesh.material.colorsNeedUpdate = true;
+    mesh.material.colorsNeedUpdate = true;
 
     for (let i = 0; i < 1000; i++) {
-        if (frame % 100 && frame % 101 && frame % 102 && frame % 103 && frame % 104 && frame % 105 && frame % 106 && frame % 107 && frame % 108 && frame % 109){
-            mesh.material.color.setHex(0xffff00);
-        }else{
-            mesh.material.color.setHex(0xff0000);
-        }
-        mesh.material.colorsNeedUpdate = true;
-
-
-        let x = (Math.sin(i + frame / 100) * (50 - (i / 20)));
-        let y = i/10;
-        let z = (Math.cos(i + frame / 100) * (50 - (i / 20)));
-        geometry.vertices[ i ] = new THREE.Vector3(x, y, z);
+            let x = (Math.sin(i + frame / 100) * (50 - (i / 20)));
+            let y = i/10;
+            let z = (Math.cos(i + frame / 100) * (50 - (i / 20)));
+            geometry.vertices[ i ] = new THREE.Vector3(x, y, z);
     }
     geometry.verticesNeedUpdate = true;
 };
