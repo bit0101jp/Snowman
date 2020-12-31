@@ -1,204 +1,98 @@
-//  forked: https://codepen.io/onom/pen/JOwxZr
+window.addEventListener('load', init);
 
-let frame = 0;
-const starVertices = [];
-const width = window.innerWidth;
-const height = window.innerHeight;
+function init() {
+    const renderer = new THREE.WebGLRenderer({
+        canvas: document.querySelector('#canvas'),
+        antialias: true
+    });
 
-// define the coordinates of the vertices of a star
-for (let degree = 18; degree < 360; degree += 36){
-    starVertices.push(
-        new THREE.Vector3(Math.sin(degree / 180 * Math.PI),
-                          Math.cos(degree / 180 * Math.PI),
-                          0));
-}
+    const scene = new THREE.Scene();
 
-// define the face of a star
-const starFaces = [
-    new THREE.Face3( 0,  9,  1),
-    new THREE.Face3( 2,  1,  3),
-    new THREE.Face3( 4,  3,  5),
-    new THREE.Face3( 6,  5,  7),
-    new THREE.Face3( 8,  7,  9),
-    new THREE.Face3( 3,  1,  5),
-    new THREE.Face3( 5,  1,  7),
-    new THREE.Face3( 7,  1,  9)
-]
+    // カメラを作成
+    const camera = new THREE.PerspectiveCamera(45, 1);
+    camera.fov = 60;
+    camera.position.set(0, 1200, 500);
+    camera.lookAt(0,0,0);
+    scene.add(camera);
 
-// calculate the size of a star
-for (let i in starVertices){
-    if (i % 2){
-        // inside
-        starVertices[i].x = starVertices[i].x * 2;
-        starVertices[i].y = starVertices[i].y * 2;
-    }else{
-        // outside
-        starVertices[i].x = starVertices[i].x * 5;
-        starVertices[i].y = starVertices[i].y * 5;
-    }
-}
+    var cameraHelper = new THREE.CameraHelper(camera);
+    scene.add(cameraHelper);
 
-// defined a renderer
-const webgldev = document.getElementById('webgl-dev');
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(width, height);
-webgldev.appendChild(renderer.domElement);
+    var cubeGeo = new THREE.BoxGeometry(10, 10, 10);
+    var cubeMat = new THREE.MeshLambertMaterial({color: 0xff0000});
+    var cube = new THREE.Mesh(cubeGeo, cubeMat);
+    cube.castShadow = true;
+    cube.position.x = 200;
+    cube.position.y = 200;
+    cube.position.z = -400;
+    scene.add(cube);
 
-const scene = new THREE.Scene();
+    var spotLight = new THREE.SpotLight(0xffffff);
+    spotLight.position.set(0, 200, 900);
+    spotLight.castShadow = true;
+    spotLight.angle = 0.6;
 
-// defined a camera
-const camera = new THREE.PerspectiveCamera(
-    45,
-    width / height,
-    0.4,
-    10000 );
+    spotLight.target = cube;
+    scene.add(spotLight);
 
-camera.position.z = 190;
-camera.position.y = 50;
-camera.rotation.x = -0.0;
+    var lightHelper = new THREE.CameraHelper(spotLight.shadow.camera);
+    scene.add(lightHelper);
 
-// defined a ambient light
-const ambientLight = new THREE.AmbientLight( 0xffffff, 1);
-scene.add( ambientLight );
+    // Load GLTF
+    const loader = new THREE.GLTFLoader();
+    const url = 'http://127.0.0.1:5500/glTF/Spaceship.glb';
 
-// create a gradient texture of illuminated points
-function getTexturePoint(col) {
-    const canvas = document.createElement('canvas');
-    const size   = 256;
-    const half   = size / 2;
-    const center = size / 2;
-    canvas.width  = size;
-    canvas.height = size;
-    const context = canvas.getContext('2d');
+    let model = null;
+    loader.load(
+        url,
+        function (gltf) {
+            console.log('load');
+            model = gltf.scene;
+            model.scale.set(100.0, 100.0, 100.0);
+            model.position.set(0, 0, 0);
+            //回転の調整
+            model.rotation.y = THREE.Math.DEG2RAD * -0;
+            scene.add(model);
+        },
+        function (error) {
+            console.log('An error happened');
+            console.log(error);
+        }
+    );
 
-    const color = new THREE.Color();
-    color.setHex(col);
+    // ガンマ補正
+    renderer.gammaOutput = true;
+    renderer.gammaFactor = 0.8;
 
-    const grad = context.createRadialGradient(center, center, 0, center, center, half);
-    grad.addColorStop(0, color.getStyle());
-    grad.addColorStop(0.99, color.getStyle());
-    grad.addColorStop(1, '#000000');
-    context.beginPath();
-    context.arc(center, center, half, 0, Math.PI * 2);
-    context.fillStyle = grad;
-    context.fill();
-    context.closePath();
+    // 初回実行
+    tick();
+    onResize();
 
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    return texture;
-}
+    // リサイズイベント発生で実行
+    window.addEventListener('resize', onResize);
 
-// define the color of the stars
-const starMaterial = new THREE.MeshPhongMaterial( {
-  color: 0xffffaa
-} );
+    function onResize() {
+        // サイズを取得
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        // 描画サイズ
+        renderer.setSize(w, h);
+        // ピクセル比
+        renderer.setPixelRatio(window.devicePixelRatio);
+        // 空間の背景色
+        renderer.setClearColor(0xe4f8ec);
 
-// create apex star geometry
-const geom = new THREE.Geometry();
-geom.vertices = starVertices;
-geom.faces = starFaces;
-geom.computeFaceNormals();
-const starObject = new THREE.Mesh(geom, starMaterial);
+        // カメラのアスペクト比を正す
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        console.log('h' + h + 'w' + w);
 
-// define the position of the star
-starObject.position.set( 0, 104, 0 );
-starObject.rotation.set( 0, 0, -60 );
-scene.add( starObject );
-
-const geometry = new THREE.Geometry();
-for (let i = 0; i < 1000; i++) {
-    geometry.vertices.push();
-}
-
-const geometry2 = new THREE.Geometry();
-for (let i = 0; i < 1000; i++) {
-    geometry2.vertices.push();
-}
-
-const material = new THREE.PointsMaterial({
-    map: getTexturePoint(0x888888),
-    size: 4,
-    transparent: true,
-    blending : THREE.AdditiveBlending
-});
-
-const material2 = new THREE.PointsMaterial({
-    map: getTexturePoint(0xdddddd),
-    size: 2,
-    transparent: true,
-    blending : THREE.AdditiveBlending
-});
-
-const mesh = new THREE.Points(geometry, material);
-scene.add(mesh);
-
-const mesh2 = new THREE.Points(geometry2, material2);
-scene.add(mesh2);
-
-
-function animation() {
-    // define blinking illuminations
-    let timing = frame % 241;
-    if (timing < 50){
-        mesh.material.color.setHex(0x0000ff);
-    }else if (timing < 100){
-        mesh.material.color.setHex(0xffff00);
-    }else if (timing < 150){
-        mesh.material.color.setHex(0xff0000);
-    }else if (timing < 200){
-        mesh.material.color.setHex(0x00ff00);
-    }else if (timing < 205){
-        mesh.material.color.setHex(0x000000);
-    }else if (timing < 208){
-        mesh.material.color.setHex(0xffffff);
-    }else if (timing < 211){
-        mesh.material.color.setHex(0x000000);
-    }else if (timing < 214){
-        mesh.material.color.setHex(0xffffff);
-    }else if (timing < 217){
-        mesh.material.color.setHex(0x000000);
-    }else if (timing < 220){
-        mesh.material.color.setHex(0xffffff);
-    }else if (timing < 223){
-        mesh.material.color.setHex(0x000000);
-    }else if (timing < 226){
-        mesh.material.color.setHex(0xffffff);
-    }else if (timing < 229){
-        mesh.material.color.setHex(0x000000);
-    }else if (timing < 232){
-        mesh.material.color.setHex(0xffffff);
-    }else if (timing < 235){
-        mesh.material.color.setHex(0x000000);
-    }else if (timing < 238){
-        mesh.material.color.setHex(0xffffff);
-    }else if (timing < 241){
-        mesh.material.color.setHex(0x000000);
+        renderer.render(scene, camera);
     }
 
-    mesh.material.colorsNeedUpdate = true;
-
-    for (let i = 0; i < 1000; i++) {
-        let x = (Math.sin(i + frame / 100) * (40 - (i / 25)));
-        let y = i/10;
-        let z = (Math.cos(i + frame / 100) * (40 - (i / 25)));
-        geometry.vertices[ i ] = new THREE.Vector3(x, y, z);
+    function tick() {
+        requestAnimationFrame(tick);
+        renderer.render(scene, camera);
     }
 
-    for (let i = 0; i < 1000; i++) {
-        let x = (Math.sin(i + frame / 100) * (25 - (i / 40)));
-        let y = i/10;
-        let z = (Math.cos(i + frame / 100) * (25 - (i / 40)));
-        geometry2.vertices[ i ] = new THREE.Vector3(x, y, z);
-    }
-    geometry.verticesNeedUpdate = true;
-};
-
-function render(){
-    animation();
-    frame++;
-  	requestAnimationFrame(render);
-	renderer.render(scene, camera);
 }
-
-render();
