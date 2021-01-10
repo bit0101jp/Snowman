@@ -6,6 +6,75 @@ function init() {
     let counter = 0;
     let pointLightArray = [];
     let sphereArray = [];
+    let streamLightArray = [];
+    let streamSphereArray = [];
+
+    // カラー定義
+    const colorPallet = {
+        white: 0xFFFFFF,
+        skyBlue: 0x00CBEB,
+        red: 0xFF0000,
+        blue: 0x0000FF,
+        green: 0x00FF00,
+        yellow: 0xFFFF00,
+        violet: 0xE000E0,
+        orange: 0xEBAB00,
+        marineBlue: 0x00EBCB,
+        pink: 0xF200F2,
+        darkBlue: 0x000099};
+
+    // ポイントライトカラー
+    let pointLightColorArray =
+                    [   colorPallet["skyBlue"],
+                        colorPallet["red"],
+                        colorPallet["blue"],
+                        colorPallet["green"],
+                        colorPallet["yellow"],
+                        colorPallet["violet"],
+                        colorPallet["orange"],
+                        colorPallet["marineBlue"],
+                        colorPallet["pink"],
+                        colorPallet["skyBlue"],
+                        colorPallet["red"],
+                        colorPallet["blue"],
+                        colorPallet["green"],
+                        colorPallet["yellow"]
+                    ];
+
+    // ポイントライト位置
+    //    Blender→Three.js: yの正負を反転して y,zを交換
+    let pointLightCood =
+                    [{x:   591, y:  418, z:   603},
+                     {x:   265, y:  378, z:   930},
+                     {x:    35, y:  349, z:  1061},
+                     {x:    79, y:  424, z:   771},
+                     {x:  -184, y:  398, z:   831},
+                     {x:  -538, y:  333, z:   812},
+                     {x:  -477, y:  379, z:   606},
+                     {x: -1000, y:  235, z:   539},
+                     {x:  -165, y:  462, z:   412},
+                     {x:  -610, y:  371, z:   129},
+                     {x:   -79, y:  463, z:     7},
+                     {x:   588, y:  438, z:   180},
+                     {x: -1126, y:  175, z:  -877},
+                     {x:  -307, y:  284, z:  -833}
+                    ];
+
+    // 流れるポイントライト位置
+    //    Blender→Three.js: yの正負を反転して y,zを交換
+    let streamLightCood =
+                    [{x:   914, y:   380, z:   124},
+                     {x:   733, y:   416, z:   418},
+                     {x:   521, y:   408, z:   697},
+                     {x:   321, y:   403, z:   845},
+                     {x:   108, y:   379, z:   963},
+                     {x:  -140, y:   375, z:  1039},
+                     {x:  -405, y:   323, z:   971},
+                     {x:  -669, y:   286, z:   871},
+                     {x:  -940, y:   237, z:   725},
+                     {x: -1255, y:   203, z:   499}
+                    ];
+
 
     const renderer = new THREE.WebGLRenderer({
         canvas: document.querySelector('#canvas'),
@@ -17,9 +86,9 @@ function init() {
 
     const scene = new THREE.Scene();
 
-    // 座標軸ヘルパー
-    const axes = new THREE.AxesHelper(10000);
-    scene.add(axes);
+    // // 座標軸ヘルパー
+    // const axes = new THREE.AxesHelper(10000);
+    // scene.add(axes);
 
     // カメラ
     const camera = new THREE.PerspectiveCamera(45, 1);
@@ -34,22 +103,8 @@ function init() {
     orbitControls.enableDamping = true;
     orbitControls.dampingFactor = 0.2;
 
-    // カラー定義
-    const colorPallet = {
-                white: 0xFFFFFF,
-                skyBlue: 0x00CBEB,
-                red: 0xFF0000,
-                blue: 0x0000FF,
-                green: 0x00FF00,
-                yellow: 0xFFFF00,
-                violet: 0xE000E0,
-                orange: 0xEBAB00,
-                marineBlue: 0x00EBCB,
-                pink: 0xF200F2,
-                darkBlue: 0x000099};
-
-     //添字を全て取得
-    var palletKeys = Object.keys(colorPallet);
+    // //添字を全て取得
+    // var palletKeys = Object.keys(colorPallet);
 
     const cylinderGeo = new THREE.CylinderGeometry(10, 10, 40);
     const cylinderMat = new THREE.MeshLambertMaterial({color: colorPallet["white"]});
@@ -66,7 +121,7 @@ function init() {
     cylinder2.position.z = -588;
     scene.add(cylinder2);
 
-    // スノーマン中心に位置するキューブ(スポットライトのターゲット)
+    // スポットライトのターゲット(スノーマン内部に位置するキューブ)
     const cubeGeo = new THREE.BoxGeometry(20, 20, 20);
     const cubeMat = new THREE.MeshLambertMaterial({color: colorPallet["white"]});
     const cubeCore = new THREE.Mesh(cubeGeo, cubeMat);
@@ -98,245 +153,48 @@ function init() {
     spotLight2.castShadow = true;
     spotLight2.angle = THREE.Math.degToRad(45);
     spotLight2.target = cubeCore;
-    spotLight2.penumbra = 0.0;  // 光の減衰率
+    spotLight2.penumbra = 0.99;  // 光の減衰率
     scene.add(spotLight2);
 
-    // PointLight
-    let pointLight1 = new THREE.PointLight(colorPallet["skyBlue"]);
-    pointLight1.position.set(591, 418, 603);
-    pointLight1.castShadow = true;
-    pointLight1.intensity = 0.5;
-    pointLightArray[0] = pointLight1;
-    scene.add(pointLight1);
+    // PointLight @@@
+    for (let i = 0; i < pointLightCood.length; i++){
+        pointLightArray[i] = new THREE.PointLight(pointLightColorArray[i]);
+        pointLightArray[i].position.x = pointLightCood[i].x;
+        pointLightArray[i].position.y = pointLightCood[i].y;
+        pointLightArray[i].position.z = pointLightCood[i].z;
+        pointLightArray[i].castShadow = true;
+        pointLightArray[i].intensity = 0.1;
+        scene.add(pointLightArray[i]);
 
-    const sphereGeo1 = new THREE.SphereGeometry(5);
-    const sphereMat1 = new THREE.MeshLambertMaterial({color: colorPallet["skyBlue"]});
-    const sphere1 = new THREE.Mesh(sphereGeo1, sphereMat1);
-    sphere1.castShadow = true;
-    sphere1.position.x = 591;
-    sphere1.position.y = 418;  // x,zを交換、yの正負を反転
-    sphere1.position.z = 603;
-    sphereArray[0] = sphere1;
-    scene.add(sphere1);
+        const geo = new THREE.SphereGeometry(5);
+        const mat = new THREE.MeshLambertMaterial({color: pointLightColorArray[i]});
+        sphereArray[i] = new THREE.Mesh(geo, mat);
+        sphereArray[i].castShadow = true;
+        sphereArray[i].position.x = pointLightCood[i].x;
+        sphereArray[i].position.y = pointLightCood[i].y;
+        sphereArray[i].position.z = pointLightCood[i].z;
+        scene.add(sphereArray[i]);
+    }
 
-    var pointLight2 = new THREE.PointLight(colorPallet["red"]);
-    pointLight2.position.set(265, 378, 930);
-    pointLight2.castShadow = true;
-    pointLightArray[1] = pointLight2;
-    scene.add(pointLight2);
+    // 流れるポイントライト @@@
+    for (let i = 0; i < streamLightCood.length; i++){
+        streamLightArray[i] = new THREE.PointLight(colorPallet["yellow"]);
+        streamLightArray[i].position.x = streamLightCood[i].x;
+        streamLightArray[i].position.y = streamLightCood[i].y;
+        streamLightArray[i].position.z = streamLightCood[i].z;
+        streamLightArray[i].castShadow = true;
+        streamLightArray[i].intensity = 0.5;
+        scene.add(streamLightArray[i]);
 
-    const sphereGeo2 = new THREE.SphereGeometry(5);
-    const sphereMat2 = new THREE.MeshLambertMaterial({color: colorPallet["red"]});
-    const sphere2 = new THREE.Mesh(sphereGeo2, sphereMat2);
-    sphere2.castShadow = true;
-    sphere2.position.x = 265;
-    sphere2.position.y = 378;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere2.position.z = 930;
-    sphereArray[1] = sphere2;
-    scene.add(sphere2);
-
-    var pointLight3 = new THREE.PointLight(colorPallet["blue"]);
-    pointLight3.position.set(35, 349, 1061);
-    pointLight3.castShadow = true;
-    pointLightArray[2] = pointLight3;
-    scene.add(pointLight3);
-
-    const sphereGeo3 = new THREE.SphereGeometry(5);
-    const sphereMat3 = new THREE.MeshLambertMaterial({color: colorPallet["blue"]});
-    const sphere3 = new THREE.Mesh(sphereGeo3, sphereMat3);
-    sphere3.castShadow = true;
-    sphere3.position.x = 35;
-    sphere3.position.y = 349;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere3.position.z = 1061;
-    sphereArray[2] = sphere3;
-    scene.add(sphere3);
-
-    var pointLight4 = new THREE.PointLight(colorPallet["green"]);
-    pointLight4.position.set(79, 424, 771);
-    pointLight4.castShadow = true;
-    pointLight4.intensity = 0.5;
-    pointLightArray[3] = pointLight4;
-    scene.add(pointLight4);
-
-    const sphereGeo4 = new THREE.SphereGeometry(5);
-    const sphereMat4 = new THREE.MeshLambertMaterial({color: colorPallet["green"]});
-    const sphere4 = new THREE.Mesh(sphereGeo4, sphereMat4);
-    sphere4.castShadow = true;
-    sphere4.position.x = 79;
-    sphere4.position.y = 424;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere4.position.z = 771;
-    sphereArray[3] = sphere4;
-    scene.add(sphere4);
-
-    var pointLight5 = new THREE.PointLight(colorPallet["yellow"]);
-    pointLight5.position.set(-184, 398, 831);
-    pointLight5.castShadow = true;
-    pointLight5.intensity = 0.5;
-    pointLightArray[4] = pointLight5;
-    scene.add(pointLight5);
-
-    const sphereGeo5 = new THREE.SphereGeometry(5);
-    const sphereMat5 = new THREE.MeshLambertMaterial({color: colorPallet["yellow"]});
-    const sphere5 = new THREE.Mesh(sphereGeo5, sphereMat5);
-    sphere5.castShadow = true;
-    sphere5.position.x = -184;
-    sphere5.position.y = 398;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere5.position.z = 831;
-    sphereArray[4] = sphere5;
-    scene.add(sphere5);
-
-    var pointLight6 = new THREE.PointLight(colorPallet["violet"]);
-    pointLight6.position.set(-538, 333, 812);
-    pointLight6.castShadow = true;
-    pointLight6.intensity = 0.5;
-    pointLightArray[5] = pointLight6;
-    scene.add(pointLight6);
-
-    const sphereGeo6 = new THREE.SphereGeometry(5);
-    const sphereMat6 = new THREE.MeshLambertMaterial({color: colorPallet["violet"]});
-    const sphere6 = new THREE.Mesh(sphereGeo6, sphereMat6);
-    sphere6.castShadow = true;
-    sphere6.position.x = -538;
-    sphere6.position.y = 333;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere6.position.z = 812;
-    sphereArray[5] = sphere6;
-    scene.add(sphere6);
-
-    var pointLight7 = new THREE.PointLight(colorPallet["orange"]);
-    pointLight7.position.set(-477, 379, 606);
-    pointLight7.castShadow = true;
-    pointLight7.intensity = 0.5;
-    pointLightArray[6] = pointLight7;
-    scene.add(pointLight7);
-
-    const sphereGeo7 = new THREE.SphereGeometry(5);
-    const sphereMat7 = new THREE.MeshLambertMaterial({color: colorPallet["orange"]});
-    const sphere7 = new THREE.Mesh(sphereGeo7, sphereMat7);
-    sphere7.castShadow = true;
-    sphere7.position.x = -477;
-    sphere7.position.y = 379;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere7.position.z = 606;
-    sphereArray[6] = sphere7;
-    scene.add(sphere7);
-
-    var pointLight8 = new THREE.PointLight(colorPallet["marineBlue"]);
-    pointLight8.position.set(-1000, 235, 539);
-    pointLight8.castShadow = true;
-    pointLight8.intensity = 0.5;
-    pointLightArray[7] = pointLight8;
-    scene.add(pointLight8);
-
-    const sphereGeo8 = new THREE.SphereGeometry(5);
-    const sphereMat8 = new THREE.MeshLambertMaterial({color: colorPallet["marineBlue"]});
-    const sphere8 = new THREE.Mesh(sphereGeo8, sphereMat8);
-    sphere8.castShadow = true;
-    sphere8.position.x = -1000;
-    sphere8.position.y = 235;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere8.position.z = 539;
-    sphereArray[7] = sphere8;
-    scene.add(sphere8);
-
-    var pointLight9 = new THREE.PointLight(colorPallet["pink"]);
-    pointLight9.position.set(-165, 462, 412);
-    pointLight9.castShadow = true;
-    pointLight9.intensity = 0.5;
-    pointLightArray[8] = pointLight9;
-    scene.add(pointLight9);
-
-    const sphereGeo9 = new THREE.SphereGeometry(5);
-    const sphereMat9 = new THREE.MeshLambertMaterial({color: colorPallet["pink"]});
-    const sphere9 = new THREE.Mesh(sphereGeo9, sphereMat9);
-    sphere9.castShadow = true;
-    sphere9.position.x = -165;
-    sphere9.position.y = 462;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere9.position.z = 412;
-    sphereArray[8] = sphere9;
-    scene.add(sphere9);
-
-    var pointLight10 = new THREE.PointLight(colorPallet["skyBlue"]);
-    pointLight10.position.set(-610, 371, 129);
-    pointLight10.castShadow = true;
-    pointLight10.intensity = 0.5;
-    pointLightArray[9] = pointLight10;
-    scene.add(pointLight10);
-
-    const sphereGeo10 = new THREE.SphereGeometry(5);
-    const sphereMat10 = new THREE.MeshLambertMaterial({color: colorPallet["skyBlue"]});
-    const sphere10 = new THREE.Mesh(sphereGeo10, sphereMat10);
-    sphere10.castShadow = true;
-    sphere10.position.x = -610;
-    sphere10.position.y = 371;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere10.position.z = 129;
-    sphereArray[9] = sphere10;
-    scene.add(sphere10);
-
-    var pointLight11 = new THREE.PointLight(colorPallet["red"]);
-    pointLight11.position.set(-79, 463, 7);
-    pointLight11.castShadow = true;
-    pointLight11.intensity = 0.5;
-    pointLightArray[10] = pointLight11;
-    scene.add(pointLight11);
-
-    const sphereGeo11 = new THREE.SphereGeometry(5);
-    const sphereMat11 = new THREE.MeshLambertMaterial({color: colorPallet["red"]});
-    const sphere11 = new THREE.Mesh(sphereGeo11, sphereMat11);
-    sphere11.castShadow = true;
-    sphere11.position.x = -79;
-    sphere11.position.y = 463;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere11.position.z = 7;
-    sphereArray[10] = sphere11;
-    scene.add(sphere11);
-
-    var pointLight12 = new THREE.PointLight(colorPallet["blue"]);
-    pointLight12.position.set(588, 438, 180);
-    pointLight12.castShadow = true;
-    pointLight12.intensity = 0.5;
-    pointLightArray[11] = pointLight12;
-    scene.add(pointLight12);
-
-    const sphereGeo12 = new THREE.SphereGeometry(5);
-    const sphereMat12 = new THREE.MeshLambertMaterial({color: colorPallet["blue"]});
-    const sphere12 = new THREE.Mesh(sphereGeo12, sphereMat12);
-    sphere12.castShadow = true;
-    sphere12.position.x = 588;
-    sphere12.position.y = 438;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere12.position.z = 180;
-    sphereArray[11] = sphere12;
-    scene.add(sphere12);
-
-    var pointLight13 = new THREE.PointLight(colorPallet["green"]);
-    pointLight13.position.set(-1126, 175, -877);
-    pointLight13.castShadow = true;
-    pointLight13.intensity = 0.5;
-    pointLightArray[12] = pointLight13;
-    scene.add(pointLight13);
-
-    const sphereGeo13 = new THREE.SphereGeometry(5);
-    const sphereMat13 = new THREE.MeshLambertMaterial({color: colorPallet["green"]});
-    const sphere13 = new THREE.Mesh(sphereGeo13, sphereMat13);
-    sphere13.castShadow = true;
-    sphere13.position.x = -1126;
-    sphere13.position.y = 175;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere13.position.z = -877;
-    sphereArray[12] = sphere13;
-    scene.add(sphere13);
-
-    var pointLight14 = new THREE.PointLight(colorPallet["yellow"]);
-    pointLight14.position.set(-307, 284, -833);
-    pointLight14.castShadow = true;
-    pointLight14.intensity = 0.5;
-    pointLightArray[13] = pointLight14;
-    scene.add(pointLight14);
-
-    const sphereGeo14 = new THREE.SphereGeometry(5);
-    const sphereMat14 = new THREE.MeshLambertMaterial({color: colorPallet["yellow"]});
-    const sphere14 = new THREE.Mesh(sphereGeo14, sphereMat14);
-    sphere14.castShadow = true;
-    sphere14.position.x = -307;
-    sphere14.position.y = 284;  // Blender→THree.js: yの正負を反転して y,zを交換
-    sphere14.position.z = -833;
-    sphereArray[13] = sphere14;
-    scene.add(sphere14);
+        const geo = new THREE.SphereGeometry(5);
+        const mat = new THREE.MeshLambertMaterial({color: colorPallet["yellow"]});
+        streamSphereArray[i] = new THREE.Mesh(geo, mat);
+        streamSphereArray[i].castShadow = true;
+        streamSphereArray[i].position.x = streamLightCood[i].x;
+        streamSphereArray[i].position.y = streamLightCood[i].y;
+        streamSphereArray[i].position.z = streamLightCood[i].z;
+        scene.add(streamSphereArray[i]);
+    }
 
 
     // var lightHelper = new THREE.CameraHelper(spotLight.shadow.camera);
@@ -345,7 +203,8 @@ function init() {
     // Load GLTF
     const loader = new THREE.GLTFLoader();
     let url = 'http://127.0.0.1:5500/glTF/treeAndSnowman.glb';
-
+    /// let url = 'https://dl.dropbox.com/s/fjtysioo2jtr99v/treeAndSnowman.glb?dl=0';
+    
     let model = null;
     loader.load(
         url,
@@ -399,26 +258,57 @@ function init() {
 
         counter++;
 
-        if (counter % 70 == 0){
+        if (counter % 20 == 0){
             //  全てのポイントライトを消灯
             for (let i = 0; i < pointLightArray.length; i++){
                 pointLightArray[i].visible = false;
-//                sphereArray[i].visible = false;
             }
 
             // ランダムに５箇所のスポットライトを点灯
-            for (let i = 0; i < 5; i++){
+            for (let i = 0; i < 7; i++){
                 let n = Math.floor(Math.random() * pointLightArray.length)
                 pointLightArray[n].visible = true;
-//                sphereArray[n].visible = true;
             }
+        }
+
+        switch(counter % 100){
+            case 0:
+                for (let i = 0; i < streamLightArray.length; i++){
+                    streamLightArray[i].visible = false;
+                }
+                break;
+            case 1:
+                streamLightArray[0].visible = true;
+                break;
+            case 2:
+                streamLightArray[1].visible = true;
+                break;
+            case 3:
+                streamLightArray[2].visible = true;
+                break;
+            case 4:
+                streamLightArray[3].visible = true;
+                break;
+            case 5:
+                streamLightArray[4].visible = true;
+                break;
+            case 6:
+                streamLightArray[5].visible = true;
+                break;
+            case 7:
+                streamLightArray[6].visible = true;
+                break;
+            case 8:
+                streamLightArray[7].visible = true;
+                break;
+            case 9:
+                streamLightArray[8].visible = true;
+                break;
         }
 
 //        //対象の添字をランダムに取得
 //       let index = palletKeys[Math.floor(Math.random() * palletKeys.length)];
 //            pointLight1.color.setHex(colorPallet[index]);
-
-
 
         requestAnimationFrame(render);
         renderer.render(scene, camera);
